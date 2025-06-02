@@ -1,37 +1,54 @@
 const express = require('express');
 const axios = require('axios');
+const bodyParser = require('body-parser');
+
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
 
-const TELEGRAM_TOKEN = '7910269804:AAEyc4UOvpSb27Xh53hChS-_dV244hsu4fE';
-const CHAT_ID = '1558652280';
+const TELEGRAM_BOT_TOKEN = '7910269804:AAEyc4UOvpSb27Xh53hChS-_dV244hsu4fE';
+const TELEGRAM_CHAT_ID = '1558652280'; // Your chat ID from Telegram
 
-app.post('/webhook', async (req, res) => {
-    const { coin, signal, entry, stop_loss, target } = req.body;
+app.post('/', async (req, res) => {
+  try {
+    const {
+      coin = 'Unknown',
+      signal = 'N/A',
+      entry = 'N/A',
+      sl = 'N/A',
+      tp1 = 'N/A',
+      tp2 = 'N/A',
+      tp3 = 'N/A'
+    } = req.body;
+
+    const emoji = signal.toUpperCase() === 'BUY' ? '🟢' : '🔴';
 
     const message = `
-📈 *${coin}*  
-🛎️ *Signal:* ${signal}  
-🎯 *Entry:* ${entry}  
-📉 *Stop Loss:* ${stop_loss}  
-🏁 *Target:* ${target}
-⏱️ *Timeframe:* 15min
+${emoji} *${signal.toUpperCase()} Signal Alert*
+
+🪙 *Coin:* ${coin}
+🎯 *Entry:* ${entry}
+⛔ *Stop Loss:* ${sl}
+
+🏁 *Targets:*
+• TP1: ${tp1}
+• TP2: ${tp2}
+• TP3: ${tp3}
     `;
 
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-            chat_id: CHAT_ID,
-            text: message,
-            parse_mode: 'Markdown'
-        });
-        res.sendStatus(200);
-    } catch (error) {
-        console.error('Error sending message to Telegram:', error);
-        res.sendStatus(500);
-    }
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'Markdown'
+    });
+
+    res.status(200).send('✅ Alert sent to Telegram!');
+  } catch (err) {
+    console.error('❌ Error:', err.message);
+    res.status(500).send('Failed to send alert.');
+  }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Webhook server is running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
